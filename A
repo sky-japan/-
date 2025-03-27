@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+<meta charset="UTF-8">
+  <title>Untitled</title>
+  <link rel="stylesheet" href="./style.css">
+
+</head>
+   <style>
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
+    margin: 0;
+    padding: 20px;
+    line-height: 1.6;
+}
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+h1 { color: #333; text-align: center; margin-bottom: 20px; }
+h2 { color: #444; font-size: 18px; }
+h3 { color: #555; font-size: 16px; margin-top: 10px; }
+.section { margin-bottom: 30px; padding: 15px; background: #fafafa; border-radius: 5px; }
+input, textarea, button { padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+input[type="text"], input[type="number"], input[type="date"] { width: 120px; }
+textarea { width: 100%; min-height: 80px; resize: vertical; }
+button { background-color: #007bff; color: white; border: none; cursor: pointer; padding: 8px 15px; }
+button:hover { background-color: #0056b3; }
+.search-results { margin-top: 15px; }
+.result-item { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; }
+.result-item:hover { background-color: #f0f0f0; }
+.horse-details { margin-top: 15px; }
+table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
+th { background-color: #007bff; color: white; }
+.evaluation-form, .add-horse-form { display: flex; flex-wrap: wrap; gap: 10px; }
+.edit-btn { background-color: #ffc107; color: #333; padding: 5px 10px; }
+.edit-btn:hover { background-color: #e0a800; }
+.delete-btn { background-color: #dc3545; color: white; padding: 5px 10px; }
+.delete-btn:hover { background-color: #c82333; }
+@media (max-width: 600px) {
+    .container { padding: 10px; }
+    input, textarea { width: 100%; }
+}
+
+<body>
+<!-- partial:index.partial.html -->
+<div class="container">
+    <h1>競馬データベース</h1>
+    <div class="section search-section">
+        <h2>競走馬検索</h2>
+        <input type="text" id="searchInput" placeholder="馬名を入力">
+        <button onclick="searchHorse()">検索</button>
+        <div id="searchResults" class="search-results"></div>
+    </div>
+    <div class="section add-horse-section">
+        <h2>新しい馬を追加</h2>
+        <div class="add-horse-form">
+            <input type="text" id="newHorseName" placeholder="馬名を入力">
+            <h3>レースデータを追加（任意）</h3>
+            <input type="date" id="newRaceDate">
+            <input type="text" id="newRaceName" placeholder="レース名">
+            <input type="number" id="newRacePosition" placeholder="着順">
+            <input type="text" id="newRaceJockey" placeholder="騎手">
+            <textarea id="newRaceEvaluation" placeholder="評価コメント"></textarea>
+            <button onclick="addNewHorse()">馬とレースを追加</button>
+        </div>
+    </div>
+    <div class="section horse-data" id="horseData" style="display: none;">
+        <h2 id="horseName"></h2>
+        <div class="horse-details">
+            <h3>馬柱</h3>
+            <table id="raceTable">
+                <thead>
+                    <tr>
+                        <th>日付</th>
+                        <th>レース名</th>
+                        <th>着順</th>
+                        <th>騎手</th>
+                        <th>評価</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="raceTableBody"></tbody>
+            </table>
+            <div class="evaluation-form">
+                <h3 id="formTitle">レース評価を追加</h3>
+                <input type="date" id="evalDate">
+                <input type="text" id="evalRace" placeholder="レース名">
+                <input type="number" id="evalPosition" placeholder="着順">
+                <input type="text" id="evalJockey" placeholder="騎手">
+                <textarea id="evalComment" placeholder="評価コメント"></textarea>
+                <button onclick="addOrUpdateEvaluation()">保存</button>
+                <button onclick="clearInputs()" id="cancelEdit" style="display: none; background-color: #dc3545;">キャンセル</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- partial -->
+  </script>
+const defaultHorses = [
+    { name: "ディープインパクト", id: 1, races: [
+        { date: "2023-01-15", raceName: "有馬記念", position: 1, jockey: "武豊", evaluation: "圧倒的な勝利" },
+        { date: "2023-03-20", raceName: "皐月賞", position: 2, jockey: "武豊", evaluation: "惜敗" }
+    ]},
+    { name: "オルフェーヴル", id: 2, races: [
+        { date: "2023-02-10", raceName: "天皇賞", position: 1, jockey: "池添謙一", evaluation: "完勝" }
+    ]}
+];
+
+let horses = JSON.parse(localStorage.getItem("horses")) || defaultHorses;
+let selectedHorse = null;
+let editingIndex = -1;
+
+function searchHorse() {
+    const query = document.getElementById("searchInput").value.toLowerCase();
+    const resultsDiv = document.getElementById("searchResults");
+    resultsDiv.innerHTML = "";
+
+    const filteredHorses = horses.filter(horse => horse.name.toLowerCase().includes(query));
+    filteredHorses.forEach(horse => {
+        const div = document.createElement("div");
+        div.className = "result-item";
+        div.textContent = horse.name;
+        div.onclick = () => showHorseData(horse);
+        resultsDiv.appendChild(div);
+    });
+}
+
+function addNewHorse() {
+    const horseName = document.getElementById("newHorseName").value.trim();
+    if (!horseName) {
+        alert("馬名を入力してください");
+        return;
+    }
+    if (horses.some(horse => horse.name.toLowerCase() === horseName.toLowerCase())) {
+        alert("この馬はすでに存在します");
+        return;
+    }
+
+    const raceDate = document.getElementById("newRaceDate").value;
+    const raceName = document.getElementById("newRaceName").value;
+    const racePosition = document.getElementById("newRacePosition").value;
+    const raceJockey = document.getElementById("newRaceJockey").value;
+    const raceEvaluation = document.getElementById("newRaceEvaluation").value;
+
+    const newHorse = {
+        name: horseName,
+        id: horses.length + 1,
+        races: []
+    };
+
+    // レースデータが入力されていれば追加
+    if (raceDate && raceName && racePosition && raceJockey) {
+        newHorse.races.push({
+            date: raceDate,
+            raceName: raceName,
+            position: parseInt(racePosition),
+            jockey: raceJockey,
+            evaluation: raceEvaluation || "未評価"
+        });
+    }
+
+    horses.push(newHorse);
+    saveToLocalStorage();
+    clearNewHorseInputs();
+    searchHorse();
+    alert(`${horseName} を追加しました`);
+}
+
+function clearNewHorseInputs() {
+    document.getElementById("newHorseName").value = "";
+    document.getElementById("newRaceDate").value = "";
+    document.getElementById("newRaceName").value = "";
+    document.getElementById("newRacePosition").value = "";
+    document.getElementById("newRaceJockey").value = "";
+    document.getElementById("newRaceEvaluation").value = "";
+}
+
+function showHorseData(horse) {
+    selectedHorse = horse;
+    document.getElementById("horseData").style.display = "block";
+    document.getElementById("horseName").textContent = horse.name;
+
+    const sortedRaces = horse.races.sort((a, b) => new Date(b.date) - new Date(a.date));
+    const tbody = document.getElementById("raceTableBody");
+    tbody.innerHTML = "";
+    sortedRaces.forEach((race, index) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${race.date}</td>
+            <td>${race.raceName}</td>
+            <td>${race.position}</td>
+            <td>${race.jockey}</td>
+            <td>${race.evaluation}</td>
+            <td>
+                <button class="edit-btn" onclick="editEvaluation(${index})">編集</button>
+                <button class="delete-btn" onclick="deleteEvaluation(${index})">削除</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    clearInputs();
+}
+
+function editEvaluation(index) {
+    editingIndex = index;
+    const race = selectedHorse.races[index];
+    document.getElementById("formTitle").textContent = "レース評価を編集";
+    document.getElementById("evalDate").value = race.date;
+    document.getElementById("evalRace").value = race.raceName;
+    document.getElementById("evalPosition").value = race.position;
+    document.getElementById("evalJockey").value = race.jockey;
+    document.getElementById("evalComment").value = race.evaluation;
+    document.getElementById("cancelEdit").style.display = "inline-block";
+}
+
+function deleteEvaluation(index) {
+    if (confirm("このレース評価を削除しますか？")) {
+        selectedHorse.races.splice(index, 1);
+        saveToLocalStorage();
+        showHorseData(selectedHorse);
+    }
+}
+
+function addOrUpdateEvaluation() {
+    if (!selectedHorse) return;
+
+    const date = document.getElementById("evalDate").value;
+    const raceName = document.getElementById("evalRace").value;
+    const position = document.getElementById("evalPosition").value;
+    const jockey = document.getElementById("evalJockey").value;
+    const comment = document.getElementById("evalComment").value;
+
+    if (date && raceName && position && jockey && comment) {
+        const raceData = { date, raceName, position: parseInt(position), jockey, evaluation: comment };
+        if (editingIndex === -1) {
+            selectedHorse.races.push(raceData);
+        } else {
+            selectedHorse.races[editingIndex] = raceData;
+            editingIndex = -1;
+            document.getElementById("formTitle").textContent = "レース評価を追加";
+            document.getElementById("cancelEdit").style.display = "none";
+        }
+        saveToLocalStorage();
+        showHorseData(selectedHorse);
+    } else {
+        alert("すべてのフィールドを入力してください");
+    }
+}
+
+function saveToLocalStorage() {
+    localStorage.setItem("horses", JSON.stringify(horses));
+}
+
+function clearInputs() {
+    document.getElementById("evalDate").value = "";
+    document.getElementById("evalRace").value = "";
+    document.getElementById("evalPosition").value = "";
+    document.getElementById("evalJockey").value = "";
+    document.getElementById("evalComment").value = "";
+    editingIndex = -1;
+    document.getElementById("formTitle").textContent = "レース評価を追加";
+    document.getElementById("cancelEdit").style.display = "none";
+}
+
+window.onload = function() {
+    document.getElementById("searchInput").value = "";
+    searchHorse();
+};
+</body>
+</html>
