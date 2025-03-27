@@ -1,0 +1,51 @@
+<div class="container">
+    <h1>競馬データベース</h1>
+    <div class="section search-section">
+        <h2>競走馬検索</h2>
+        <input type="text" id="searchInput" placeholder="馬名を入力">
+        <button onclick="searchHorse()">検索</button>
+        <div id="searchResults" class="search-results"></div>
+    </div>
+    <div class="section add-horse-section">
+        <h2>新しい馬を追加</h2>
+        <div class="add-horse-form">
+            <input type="text" id="newHorseName" placeholder="馬名を入力">
+            <h3>レースデータを追加（任意）</h3>
+            <input type="date" id="newRaceDate">
+            <input type="text" id="newRaceName" placeholder="レース名">
+            <input type="number" id="newRacePosition" placeholder="着順">
+            <input type="text" id="newRaceJockey" placeholder="騎手">
+            <textarea id="newRaceEvaluation" placeholder="評価コメント"></textarea>
+            <button onclick="addNewHorse()">馬とレースを追加</button>
+        </div>
+    </div>
+    <div class="section horse-data" id="horseData" style="display: none;">
+        <h2 id="horseName"></h2>
+        <div class="horse-details">
+            <h3>馬柱</h3>
+            <table id="raceTable">
+                <thead>
+                    <tr>
+                        <th>日付</th>
+                        <th>レース名</th>
+                        <th>着順</th>
+                        <th>騎手</th>
+                        <th>評価</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="raceTableBody"></tbody>
+            </table>
+            <div class="evaluation-form">
+                <h3 id="formTitle">レース評価を追加</h3>
+                <input type="date" id="evalDate">
+                <input type="text" id="evalRace" placeholder="レース名">
+                <input type="number" id="evalPosition" placeholder="着順">
+                <input type="text" id="evalJockey" placeholder="騎手">
+                <textarea id="evalComment" placeholder="評価コメント"></textarea>
+                <button onclick="addOrUpdateEvaluation()">保存</button>
+                <button onclick="clearInputs()" id="cancelEdit" style="display: none; background-color: #dc3545;">キャンセル</button>
+            </div>
+        </div>
+    </div>
+</div>
